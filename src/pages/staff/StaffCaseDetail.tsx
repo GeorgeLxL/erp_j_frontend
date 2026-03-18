@@ -5,6 +5,13 @@ import api from '../../api/client';
 const STATUS_LABEL: Record<string, string> = {
   PENDING: '未処理', ESTIMATED: '見積済', FAX_SENT: 'FAX送信済', PRINTED: '印刷済', COMPLETED: '完了',
 };
+const STATUS_COLOR: Record<string, string> = {
+  PENDING: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
+  ESTIMATED: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+  FAX_SENT: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
+  PRINTED: 'bg-green-500/10 text-green-400 border-green-500/20',
+  COMPLETED: 'bg-white/5 text-white/40 border-white/10',
+};
 const DOC_LABEL: Record<string, string> = {
   estimate: '見積書', delivery: '納品書', invoice: '請求書', copy: 'コピー',
 };
@@ -26,13 +33,8 @@ export default function StaffCaseDetail() {
   const [error, setError] = useState('');
 
   const load = useCallback(async () => {
-    const [cRes, dRes] = await Promise.all([
-      api.get(`/cases/${id}`),
-      api.get(`/documents/${id}`),
-    ]);
-    setCaseData(cRes.data);
-    setDocuments(dRes.data);
-    setLoading(false);
+    const [cRes, dRes] = await Promise.all([api.get(`/cases/${id}`), api.get(`/documents/${id}`)]);
+    setCaseData(cRes.data); setDocuments(dRes.data); setLoading(false);
   }, [id]);
 
   useEffect(() => { load(); }, [load]);
@@ -41,8 +43,7 @@ export default function StaffCaseDetail() {
     if (!q.trim()) return setSearchResults([]);
     setSearching(true);
     const { data } = await api.get(`/products?q=${encodeURIComponent(q)}`);
-    setSearchResults(data);
-    setSearching(false);
+    setSearchResults(data); setSearching(false);
   }
 
   async function assignProduct(itemId: string, product: any) {
@@ -50,105 +51,92 @@ export default function StaffCaseDetail() {
       item.id === itemId ? { ...item, productId: product.smaregiId, product } : item
     );
     await api.put(`/cases/${id}`, {
-      ...caseData,
-      workDate: caseData.workDate,
-      customerId: caseData.customer.id,
-      items: updatedItems.map((i: any) => ({
-        partNumberRaw: i.partNumberRaw,
-        quantity: i.quantity,
-        productId: i.productId || null,
-      })),
+      ...caseData, workDate: caseData.workDate, customerId: caseData.customer.id,
+      items: updatedItems.map((i: any) => ({ partNumberRaw: i.partNumberRaw, quantity: i.quantity, productId: i.productId || null })),
     });
-    setSearchResults([]);
-    setProductSearch('');
-    await load();
+    setSearchResults([]); setProductSearch(''); await load();
   }
 
   async function generateDocument() {
-    setGenerating(true);
-    setError('');
-    setMsg('');
+    setGenerating(true); setError(''); setMsg('');
     try {
       const { data } = await api.post(`/documents/${id}`, { type: docType, includeInternal });
       setMsg(`${DOC_LABEL[docType]}を作成しました`);
-      setDocuments((prev) => [data.document, ...prev]);
-      await load();
+      setDocuments((prev) => [data.document, ...prev]); await load();
     } catch (err: any) {
       setError(err.response?.data?.message || 'エラーが発生しました');
-    } finally {
-      setGenerating(false);
-    }
+    } finally { setGenerating(false); }
   }
 
   async function sendFax(documentId: string) {
-    setFaxing(true);
-    setError('');
-    setMsg('');
+    setFaxing(true); setError(''); setMsg('');
     try {
       const { data } = await api.post(`/fax/${id}`, { documentId });
-      setMsg(data.message);
-      await load();
+      setMsg(data.message); await load();
     } catch (err: any) {
       setError(err.response?.data?.message || 'FAX送信に失敗しました');
-    } finally {
-      setFaxing(false);
-    }
+    } finally { setFaxing(false); }
   }
 
   async function updateStatus(status: string) {
-    await api.put(`/cases/${id}`, { ...caseData, customerId: caseData.customer.id, status });
-    await load();
+    await api.put(`/cases/${id}`, { ...caseData, customerId: caseData.customer.id, status }); await load();
   }
 
   async function markPrinted() {
-    await api.put(`/cases/${id}`, { ...caseData, customerId: caseData.customer.id, printed: true, status: 'PRINTED' });
-    await load();
+    await api.put(`/cases/${id}`, { ...caseData, customerId: caseData.customer.id, printed: true, status: 'PRINTED' }); await load();
   }
 
-  if (loading) return <p className="text-center text-gray-500 mt-8">読み込み中...</p>;
-  if (!caseData) return <p className="text-center text-red-500 mt-8">案件が見つかりません</p>;
+  if (loading) return <p className="text-center text-white/30 mt-12 tracking-widest">読み込み中...</p>;
+  if (!caseData) return <p className="text-center text-red-400 mt-12">案件が見つかりません</p>;
 
   return (
     <div className="max-w-3xl mx-auto space-y-4">
-      <button onClick={() => navigate('/staff')} className="text-blue-600 hover:underline text-sm">← 一覧に戻る</button>
+      <button onClick={() => navigate('/staff')} className="text-xs tracking-widest text-white/30 hover:text-white/60 transition uppercase">← 一覧に戻る</button>
 
-      {msg && <div className="bg-green-50 border border-green-200 text-green-700 rounded-lg px-4 py-2 text-sm">{msg}</div>}
-      {error && <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-2 text-sm">{error}</div>}
+      {msg && <div className="px-4 py-2.5 rounded-lg bg-green-500/10 border border-green-500/20 text-green-400 text-sm">{msg}</div>}
+      {error && <div className="px-4 py-2.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">{error}</div>}
 
       {/* Case Info */}
-      <div className="bg-white rounded-xl shadow p-5">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-bold text-gray-800">{caseData.vehicleType}</h2>
-          <span className="text-sm text-gray-500">ステータス: {STATUS_LABEL[caseData.status]}</span>
+      <div className="glass rounded-2xl p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-light tracking-wide text-white/90">{caseData.vehicleType}</h2>
+          <span className={`text-xs px-2.5 py-1 rounded-full border ${STATUS_COLOR[caseData.status]}`}>{STATUS_LABEL[caseData.status]}</span>
         </div>
-        <div className="grid grid-cols-2 gap-2 text-sm text-gray-600">
-          <div>顧客: <span className="font-medium text-gray-800">{caseData.customer?.name}</span></div>
-          <div>FAX: {caseData.customer?.faxNumber || '未登録'}</div>
-          <div>作業日: {new Date(caseData.workDate).toLocaleDateString('ja-JP')}</div>
-          <div>担当: {caseData.worker?.name}</div>
-          {caseData.notes && <div className="col-span-2">備考: {caseData.notes}</div>}
-          {caseData.internalNotes && <div className="col-span-2 text-orange-600">社内メモ: {caseData.internalNotes}</div>}
-          {caseData.invoiceNumber && <div className="col-span-2">請求書番号: <span className="font-mono font-medium">{caseData.invoiceNumber}</span></div>}
+        <div className="grid grid-cols-2 gap-3 text-sm">
+          {[
+            ['顧客', caseData.customer?.name],
+            ['FAX', caseData.customer?.faxNumber || '未登録'],
+            ['作業日', new Date(caseData.workDate).toLocaleDateString('ja-JP')],
+            ['担当', caseData.worker?.name],
+            ...(caseData.notes ? [['備考', caseData.notes]] : []),
+            ...(caseData.internalNotes ? [['社内メモ', caseData.internalNotes]] : []),
+            ...(caseData.invoiceNumber ? [['請求書番号', caseData.invoiceNumber]] : []),
+          ].map(([label, value]) => (
+            <div key={label} className={label === '備考' || label === '社内メモ' || label === '請求書番号' ? 'col-span-2' : ''}>
+              <span className="text-xs text-white/30 tracking-widest uppercase">{label}</span>
+              <p className={`mt-0.5 text-white/70 ${label === '社内メモ' ? 'text-orange-400/70' : ''}`}>{value}</p>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Items & Product Assignment */}
-      <div className="bg-white rounded-xl shadow p-5">
-        <h3 className="font-semibold text-gray-700 mb-3">部品一覧・製品割り当て</h3>
+      {/* Items */}
+      <div className="glass rounded-2xl p-5">
+        <h3 className="text-xs font-medium tracking-widest text-white/40 uppercase mb-4">部品一覧・製品割り当て</h3>
         <div className="space-y-3">
           {caseData.items?.map((item: any) => (
-            <div key={item.id} className="border rounded-lg p-3">
+            <div key={item.id} className="border border-white/8 rounded-xl p-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <span className="text-sm font-mono text-gray-700">{item.partNumberRaw}</span>
-                  <span className="text-xs text-gray-400 ml-2">× {item.quantity}</span>
+                  <span className="text-sm font-mono text-white/80">{item.partNumberRaw}</span>
+                  <span className="text-xs text-white/30 ml-2">× {item.quantity}</span>
                 </div>
                 {item.product ? (
-                  <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
+                  <span className="text-xs px-2.5 py-1 rounded-full border bg-green-500/10 text-green-400 border-green-500/20">
                     {item.product.name} — ¥{item.product.price?.toLocaleString()}
                   </span>
                 ) : (
-                  <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full">未割り当て</span>
+                  <span className="text-xs px-2.5 py-1 rounded-full border bg-yellow-500/10 text-yellow-400 border-yellow-500/20">未割り当て</span>
                 )}
               </div>
               {!item.product && (
@@ -158,21 +146,17 @@ export default function StaffCaseDetail() {
                       placeholder="製品を検索..."
                       value={productSearch}
                       onChange={(e) => { setProductSearch(e.target.value); searchProducts(e.target.value); }}
-                      className="flex-1 border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="input-luxury flex-1 text-sm"
                     />
-                    {searching && <span className="text-xs text-gray-400 self-center">検索中...</span>}
+                    {searching && <span className="text-xs text-white/30 self-center">検索中...</span>}
                   </div>
                   {searchResults.length > 0 && (
-                    <div className="mt-1 border rounded-lg divide-y max-h-40 overflow-y-auto">
+                    <div className="mt-1 glass rounded-xl divide-y divide-white/5 max-h-40 overflow-y-auto">
                       {searchResults.map((p) => (
-                        <button
-                          key={p.smaregiId}
-                          onClick={() => assignProduct(item.id, p)}
-                          className="w-full text-left px-3 py-2 text-sm hover:bg-blue-50 transition"
-                        >
-                          <span className="font-medium">{p.name}</span>
-                          <span className="text-gray-400 ml-2">{p.partNumber}</span>
-                          <span className="text-blue-600 ml-2">¥{p.price?.toLocaleString()}</span>
+                        <button key={p.smaregiId} onClick={() => assignProduct(item.id, p)} className="w-full text-left px-3 py-2 text-sm glass-hover transition">
+                          <span className="font-medium text-white/80">{p.name}</span>
+                          <span className="text-white/30 ml-2 text-xs">{p.partNumber}</span>
+                          <span className="gold ml-2 text-xs">¥{p.price?.toLocaleString()}</span>
                         </button>
                       ))}
                     </div>
@@ -185,61 +169,35 @@ export default function StaffCaseDetail() {
       </div>
 
       {/* Document Generation */}
-      <div className="bg-white rounded-xl shadow p-5">
-        <h3 className="font-semibold text-gray-700 mb-3">文書作成</h3>
+      <div className="glass rounded-2xl p-5">
+        <h3 className="text-xs font-medium tracking-widest text-white/40 uppercase mb-4">文書作成</h3>
         <div className="flex flex-wrap gap-3 items-center">
-          <select
-            value={docType}
-            onChange={(e) => setDocType(e.target.value)}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
+          <select value={docType} onChange={(e) => setDocType(e.target.value)} className="input-luxury w-auto text-sm">
             {Object.entries(DOC_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
           </select>
-          <label className="flex items-center gap-2 text-sm text-gray-600">
-            <input type="checkbox" checked={includeInternal} onChange={(e) => setIncludeInternal(e.target.checked)} />
+          <label className="flex items-center gap-2 text-sm text-white/40 cursor-pointer">
+            <input type="checkbox" checked={includeInternal} onChange={(e) => setIncludeInternal(e.target.checked)} className="accent-yellow-500" />
             社内メモを含める
           </label>
-          <button
-            onClick={generateDocument}
-            disabled={generating}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition"
-          >
+          <button onClick={generateDocument} disabled={generating} className="btn-gold px-4 py-2 rounded-lg text-xs tracking-widest uppercase">
             {generating ? '作成中...' : 'PDFを作成'}
           </button>
         </div>
-
         {documents.length > 0 && (
           <div className="mt-4 space-y-2">
-            <p className="text-sm font-medium text-gray-600">作成済み文書</p>
+            <p className="text-xs tracking-widest text-white/30 uppercase">作成済み文書</p>
             {documents.map((doc) => (
-              <div key={doc.id} className="flex items-center justify-between border rounded-lg px-3 py-2">
-                <div className="text-sm">
-                  <span className="font-medium">{DOC_LABEL[doc.type] || doc.type}</span>
-                  <span className="text-gray-400 ml-2 text-xs">{new Date(doc.createdAt).toLocaleString('ja-JP')}</span>
+              <div key={doc.id} className="flex items-center justify-between border border-white/8 rounded-xl px-4 py-3">
+                <div>
+                  <span className="text-sm text-white/80 font-medium">{DOC_LABEL[doc.type] || doc.type}</span>
+                  <span className="text-white/30 ml-2 text-xs">{new Date(doc.createdAt).toLocaleString('ja-JP')}</span>
                 </div>
-                <div className="flex gap-2">
-                  <a
-                    href={doc.filePath}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:underline text-sm"
-                  >
-                    表示
-                  </a>
-                  <button
-                    onClick={() => sendFax(doc.id)}
-                    disabled={faxing || caseData.faxSent}
-                    className="text-purple-600 hover:underline text-sm disabled:opacity-40"
-                  >
+                <div className="flex gap-4 text-xs">
+                  <a href={doc.filePath} target="_blank" rel="noopener noreferrer" className="gold hover:opacity-70 transition">表示</a>
+                  <button onClick={() => sendFax(doc.id)} disabled={faxing || caseData.faxSent} className="text-purple-400/70 hover:text-purple-400 transition disabled:opacity-30">
                     {faxing ? '送信中...' : 'FAX送信'}
                   </button>
-                  <button
-                    onClick={markPrinted}
-                    disabled={caseData.printed}
-                    className="text-green-600 hover:underline text-sm disabled:opacity-40"
-                  >
-                    印刷済みにする
-                  </button>
+                  <button onClick={markPrinted} disabled={caseData.printed} className="text-green-400/70 hover:text-green-400 transition disabled:opacity-30">印刷済みにする</button>
                 </div>
               </div>
             ))}
@@ -247,19 +205,17 @@ export default function StaffCaseDetail() {
         )}
       </div>
 
-      {/* Status Management */}
-      <div className="bg-white rounded-xl shadow p-5">
-        <h3 className="font-semibold text-gray-700 mb-3">ステータス管理</h3>
+      {/* Status */}
+      <div className="glass rounded-2xl p-5">
+        <h3 className="text-xs font-medium tracking-widest text-white/40 uppercase mb-4">ステータス管理</h3>
         <div className="flex flex-wrap gap-2">
           {Object.entries(STATUS_LABEL).map(([k, v]) => (
             <button
               key={k}
               onClick={() => updateStatus(k)}
               disabled={caseData.status === k}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
-                caseData.status === k
-                  ? 'bg-blue-600 text-white cursor-default'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              className={`px-4 py-2 rounded-lg text-xs tracking-widest uppercase font-medium transition ${
+                caseData.status === k ? 'btn-gold cursor-default' : 'border border-white/10 text-white/40 hover:border-white/20 hover:text-white/60'
               }`}
             >
               {v}
