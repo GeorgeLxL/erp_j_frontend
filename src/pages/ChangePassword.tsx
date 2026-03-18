@@ -24,11 +24,13 @@ export default function ChangePassword() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-sm">
-        <h1 className="text-xl font-bold text-gray-800 mb-6">パスワード変更</h1>
-        {error && <p className="text-red-500 text-sm mb-3">{error}</p>}
-        {success && <p className="text-green-600 text-sm mb-3">{success}</p>}
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'radial-gradient(ellipse at 50% 0%, #1a1a2e 0%, #0f1117 70%)' }}>
+      <div className="w-full max-w-sm glass rounded-2xl p-8 shadow-2xl">
+        <h1 className="text-lg font-light tracking-[0.2em] gold uppercase mb-6">パスワード変更</h1>
+
+        {error && <div className="mb-4 px-4 py-2.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">{error}</div>}
+        {success && <div className="mb-4 px-4 py-2.5 rounded-lg bg-green-500/10 border border-green-500/20 text-green-400 text-sm">{success}</div>}
+
         <form onSubmit={handleSubmit} className="space-y-4">
           {[
             { label: '現在のパスワード', value: current, set: setCurrent },
@@ -36,21 +38,21 @@ export default function ChangePassword() {
             { label: '新しいパスワード（確認）', value: confirm, set: setConfirm },
           ].map(({ label, value, set }) => (
             <div key={label}>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+              <label className="block text-xs font-medium text-white/40 mb-1.5 tracking-widest uppercase">{label}</label>
               <input
                 type="password"
                 value={value}
                 onChange={(e) => set(e.target.value)}
                 required
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="input-luxury"
               />
             </div>
           ))}
-          <button type="submit" className="w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition">
+          <button type="submit" className="btn-gold w-full py-3 rounded-xl text-sm tracking-widest uppercase mt-2">
             変更する
           </button>
-          <button type="button" onClick={() => navigate(-1)} className="w-full text-gray-500 text-sm hover:underline">
-            戻る
+          <button type="button" onClick={() => navigate(-1)} className="w-full text-white/30 hover:text-white/50 text-xs tracking-wide transition py-1">
+            ← 戻る
           </button>
         </form>
       </div>

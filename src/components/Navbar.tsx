@@ -8,14 +8,25 @@ export default function Navbar({ title }: { title: string }) {
   const navigate = useNavigate();
 
   return (
-    <nav className="bg-blue-700 text-white px-4 py-3 flex items-center justify-between shadow">
-      <h1 className="font-bold text-lg">{title}</h1>
-      <div className="flex items-center gap-3 text-sm">
-        <span>{user?.name}（{ROLE_LABEL[user?.role || '']}）</span>
-        <button onClick={() => navigate('/change-password')} className="underline hover:text-blue-200">
+    <nav className="glass border-b border-white/10 px-6 py-4 flex items-center justify-between">
+      <h1 className="font-bold text-lg tracking-widest gold uppercase">{title}</h1>
+      <div className="flex items-center gap-4 text-sm">
+        <span className="text-white/50">
+          {user?.name}
+          <span className="ml-2 text-xs px-2 py-0.5 rounded-full border border-yellow-600/40 gold">
+            {ROLE_LABEL[user?.role || '']}
+          </span>
+        </span>
+        <button
+          onClick={() => navigate('/change-password')}
+          className="text-white/40 hover:text-white/70 transition text-xs tracking-wide"
+        >
           パスワード変更
         </button>
-        <button onClick={() => { signout(); navigate('/signin'); }} className="bg-white text-blue-700 px-3 py-1 rounded-lg font-medium hover:bg-blue-100 transition">
+        <button
+          onClick={() => { signout(); navigate('/signin'); }}
+          className="btn-gold px-4 py-1.5 rounded-lg text-xs tracking-wide"
+        >
           ログアウト
         </button>
       </div>
