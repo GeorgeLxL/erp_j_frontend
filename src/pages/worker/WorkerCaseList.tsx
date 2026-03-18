@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import api from '../../api/client';
+import { getCases, Case } from '../../api/cases.api';
 
 const STATUS_LABEL: Record<string, string> = {
   PENDING: '未処理', ESTIMATED: '見積済', FAX_SENT: 'FAX送信済', PRINTED: '印刷済', COMPLETED: '完了',
@@ -13,11 +13,11 @@ const STATUS_COLOR: Record<string, string> = {
 };
 
 export default function WorkerCaseList() {
-  const [cases, setCases] = useState<any[]>([]);
+  const [cases, setCases] = useState<Case[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.get('/cases').then((r) => setCases(r.data)).finally(() => setLoading(false));
+    getCases().then(setCases).finally(() => setLoading(false));
   }, []);
 
   if (loading) return <p className="text-center text-white/30 mt-12 tracking-widest">読み込み中...</p>;
@@ -40,7 +40,7 @@ export default function WorkerCaseList() {
             {c.notes && <p>備考: <span className="text-white/50">{c.notes}</span></p>}
           </div>
           {c.items?.length > 0 && (
-            <p className="text-xs text-white/25 mt-3 font-mono">{c.items.map((i: any) => i.partNumberRaw).join('  ·  ')}</p>
+            <p className="text-xs text-white/25 mt-3 font-mono">{c.items.map((i) => i.partNumberRaw).join('  ·  ')}</p>
           )}
         </div>
       ))}

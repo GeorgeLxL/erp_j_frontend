@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import api from '../../api/client';
+import { getCase, updateCase, Case } from '../../api/cases.api';
+import { getDocuments, createDocument, sendFax, searchProducts, Document } from '../../api/resources.api';
 
 const STATUS_LABEL: Record<string, string> = {
   PENDING: '未処理', ESTIMATED: '見積済', FAX_SENT: 'FAX送信済', PRINTED: '印刷済', COMPLETED: '完了',
@@ -19,8 +20,8 @@ const DOC_LABEL: Record<string, string> = {
 export default function StaffCaseDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [caseData, setCaseData] = useState<any>(null);
-  const [documents, setDocuments] = useState<any[]>([]);
+  const [caseData, setCaseData] = useState<Case | null>(null);
+  const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [productSearch, setProductSearch] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
@@ -33,57 +34,79 @@ export default function StaffCaseDetail() {
   const [error, setError] = useState('');
 
   const load = useCallback(async () => {
-    const [cRes, dRes] = await Promise.all([api.get(`/cases/${id}`), api.get(`/documents/${id}`)]);
-    setCaseData(cRes.data); setDocuments(dRes.data); setLoading(false);
+    const [c, docs] = await Promise.all([getCase(id!), getDocuments(id!)]);
+    setCaseData(c);
+    setDocuments(docs);
+    setLoading(false);
   }, [id]);
 
   useEffect(() => { load(); }, [load]);
 
-  async function searchProducts(q: string) {
+  async function handleSearchProducts(q: string) {
+    setProductSearch(q);
     if (!q.trim()) return setSearchResults([]);
     setSearching(true);
-    const { data } = await api.get(`/products?q=${encodeURIComponent(q)}`);
-    setSearchResults(data); setSearching(false);
+    const results = await searchProducts(q);
+    setSearchResults(results);
+    setSearching(false);
   }
 
   async function assignProduct(itemId: string, product: any) {
-    const updatedItems = caseData.items.map((item: any) =>
-      item.id === itemId ? { ...item, productId: product.smaregiId, product } : item
-    );
-    await api.put(`/cases/${id}`, {
-      ...caseData, workDate: caseData.workDate, customerId: caseData.customer.id,
-      items: updatedItems.map((i: any) => ({ partNumberRaw: i.partNumberRaw, quantity: i.quantity, productId: i.productId || null })),
+    if (!caseData) return;
+    await updateCase(id!, {
+      customerId: caseData.customer.id,
+      items: caseData.items.map((item) =>
+        item.id === itemId
+          ? { partNumberRaw: item.partNumberRaw, quantity: item.quantity, productId: product.smaregiId }
+          : { partNumberRaw: item.partNumberRaw, quantity: item.quantity, productId: item.productId }
+      ),
     });
-    setSearchResults([]); setProductSearch(''); await load();
+    setSearchResults([]);
+    setProductSearch('');
+    await load();
   }
 
-  async function generateDocument() {
-    setGenerating(true); setError(''); setMsg('');
+  async function handleGenerateDocument() {
+    setGenerating(true);
+    setError('');
+    setMsg('');
     try {
-      const { data } = await api.post(`/documents/${id}`, { type: docType, includeInternal });
+      const data = await createDocument(id!, docType, includeInternal);
       setMsg(`${DOC_LABEL[docType]}を作成しました`);
-      setDocuments((prev) => [data.document, ...prev]); await load();
+      setDocuments((prev) => [data.document, ...prev]);
+      await load();
     } catch (err: any) {
       setError(err.response?.data?.message || 'エラーが発生しました');
-    } finally { setGenerating(false); }
+    } finally {
+      setGenerating(false);
+    }
   }
 
-  async function sendFax(documentId: string) {
-    setFaxing(true); setError(''); setMsg('');
+  async function handleSendFax(documentId: string) {
+    setFaxing(true);
+    setError('');
+    setMsg('');
     try {
-      const { data } = await api.post(`/fax/${id}`, { documentId });
-      setMsg(data.message); await load();
+      const data = await sendFax(id!, documentId);
+      setMsg(data.message);
+      await load();
     } catch (err: any) {
       setError(err.response?.data?.message || 'FAX送信に失敗しました');
-    } finally { setFaxing(false); }
+    } finally {
+      setFaxing(false);
+    }
   }
 
-  async function updateStatus(status: string) {
-    await api.put(`/cases/${id}`, { ...caseData, customerId: caseData.customer.id, status }); await load();
+  async function handleUpdateStatus(status: string) {
+    if (!caseData) return;
+    await updateCase(id!, { customerId: caseData.customer.id, status });
+    await load();
   }
 
-  async function markPrinted() {
-    await api.put(`/cases/${id}`, { ...caseData, customerId: caseData.customer.id, printed: true, status: 'PRINTED' }); await load();
+  async function handleMarkPrinted() {
+    if (!caseData) return;
+    await updateCase(id!, { customerId: caseData.customer.id, printed: true, status: 'PRINTED' });
+    await load();
   }
 
   if (loading) return <p className="text-center text-white/30 mt-12 tracking-widest">読み込み中...</p>;
@@ -103,7 +126,7 @@ export default function StaffCaseDetail() {
           <span className={`text-xs px-2.5 py-1 rounded-full border ${STATUS_COLOR[caseData.status]}`}>{STATUS_LABEL[caseData.status]}</span>
         </div>
         <div className="grid grid-cols-2 gap-3 text-sm">
-          {[
+          {([
             ['顧客', caseData.customer?.name],
             ['FAX', caseData.customer?.faxNumber || '未登録'],
             ['作業日', new Date(caseData.workDate).toLocaleDateString('ja-JP')],
@@ -111,7 +134,7 @@ export default function StaffCaseDetail() {
             ...(caseData.notes ? [['備考', caseData.notes]] : []),
             ...(caseData.internalNotes ? [['社内メモ', caseData.internalNotes]] : []),
             ...(caseData.invoiceNumber ? [['請求書番号', caseData.invoiceNumber]] : []),
-          ].map(([label, value]) => (
+          ] as [string, string][]).map(([label, value]) => (
             <div key={label} className={label === '備考' || label === '社内メモ' || label === '請求書番号' ? 'col-span-2' : ''}>
               <span className="text-xs text-white/30 tracking-widest uppercase">{label}</span>
               <p className={`mt-0.5 text-white/70 ${label === '社内メモ' ? 'text-orange-400/70' : ''}`}>{value}</p>
@@ -124,7 +147,7 @@ export default function StaffCaseDetail() {
       <div className="glass rounded-2xl p-5">
         <h3 className="text-xs font-medium tracking-widest text-white/40 uppercase mb-4">部品一覧・製品割り当て</h3>
         <div className="space-y-3">
-          {caseData.items?.map((item: any) => (
+          {caseData.items?.map((item) => (
             <div key={item.id} className="border border-white/8 rounded-xl p-3">
               <div className="flex items-center justify-between">
                 <div>
@@ -145,7 +168,7 @@ export default function StaffCaseDetail() {
                     <input
                       placeholder="製品を検索..."
                       value={productSearch}
-                      onChange={(e) => { setProductSearch(e.target.value); searchProducts(e.target.value); }}
+                      onChange={(e) => handleSearchProducts(e.target.value)}
                       className="input-luxury flex-1 text-sm"
                     />
                     {searching && <span className="text-xs text-white/30 self-center">検索中...</span>}
@@ -179,7 +202,7 @@ export default function StaffCaseDetail() {
             <input type="checkbox" checked={includeInternal} onChange={(e) => setIncludeInternal(e.target.checked)} className="accent-yellow-500" />
             社内メモを含める
           </label>
-          <button onClick={generateDocument} disabled={generating} className="btn-gold px-4 py-2 rounded-lg text-xs tracking-widest uppercase">
+          <button onClick={handleGenerateDocument} disabled={generating} className="btn-gold px-4 py-2 rounded-lg text-xs tracking-widest uppercase">
             {generating ? '作成中...' : 'PDFを作成'}
           </button>
         </div>
@@ -194,10 +217,10 @@ export default function StaffCaseDetail() {
                 </div>
                 <div className="flex gap-4 text-xs">
                   <a href={doc.filePath} target="_blank" rel="noopener noreferrer" className="gold hover:opacity-70 transition">表示</a>
-                  <button onClick={() => sendFax(doc.id)} disabled={faxing || caseData.faxSent} className="text-purple-400/70 hover:text-purple-400 transition disabled:opacity-30">
+                  <button onClick={() => handleSendFax(doc.id)} disabled={faxing || caseData.faxSent} className="text-purple-400/70 hover:text-purple-400 transition disabled:opacity-30">
                     {faxing ? '送信中...' : 'FAX送信'}
                   </button>
-                  <button onClick={markPrinted} disabled={caseData.printed} className="text-green-400/70 hover:text-green-400 transition disabled:opacity-30">印刷済みにする</button>
+                  <button onClick={handleMarkPrinted} disabled={caseData.printed} className="text-green-400/70 hover:text-green-400 transition disabled:opacity-30">印刷済みにする</button>
                 </div>
               </div>
             ))}
@@ -212,7 +235,7 @@ export default function StaffCaseDetail() {
           {Object.entries(STATUS_LABEL).map(([k, v]) => (
             <button
               key={k}
-              onClick={() => updateStatus(k)}
+              onClick={() => handleUpdateStatus(k)}
               disabled={caseData.status === k}
               className={`px-4 py-2 rounded-lg text-xs tracking-widest uppercase font-medium transition ${
                 caseData.status === k ? 'btn-gold cursor-default' : 'border border-white/10 text-white/40 hover:border-white/20 hover:text-white/60'

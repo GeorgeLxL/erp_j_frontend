@@ -1,8 +1,8 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../../api/client';
+import { createCase } from '../../api/cases.api';
+import { getCustomers, Customer } from '../../api/resources.api';
 
-interface Customer { id: string; name: string }
 interface PartItem { partNumberRaw: string; quantity: number }
 
 export default function WorkerNewCase() {
@@ -18,7 +18,7 @@ export default function WorkerNewCase() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    api.get('/customers').then((r) => setCustomers(r.data)).catch(() => {});
+    getCustomers().then(setCustomers).catch(() => {});
   }, []);
 
   function addItem() { setItems([...items, { partNumberRaw: '', quantity: 1 }]); }
@@ -31,13 +31,16 @@ export default function WorkerNewCase() {
     e.preventDefault();
     if (!customerId) return setError('顧客を選択してください');
     if (items.some((i) => !i.partNumberRaw.trim())) return setError('部品番号を入力してください');
-    setError(''); setLoading(true);
+    setError('');
+    setLoading(true);
     try {
-      await api.post('/cases', { vehicleType, customerId, workDate, notes, internalNotes, items });
+      await createCase({ vehicleType, customerId, workDate, notes, internalNotes, items });
       navigate('/worker');
     } catch (err: any) {
       setError(err.response?.data?.message || 'エラーが発生しました');
-    } finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+    }
   }
 
   const Field = ({ label, children }: { label: string; children: React.ReactNode }) => (
@@ -51,23 +54,19 @@ export default function WorkerNewCase() {
     <div className="max-w-lg mx-auto glass rounded-2xl p-6 shadow-2xl">
       <h2 className="text-sm font-medium tracking-widest text-white/50 uppercase mb-6">新規案件入力</h2>
       {error && <div className="mb-4 px-4 py-2.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">{error}</div>}
-
       <form onSubmit={handleSubmit} className="space-y-5">
         <Field label="車種 *">
           <input value={vehicleType} onChange={(e) => setVehicleType(e.target.value)} required placeholder="例: トヨタ プリウス 2020" className="input-luxury" />
         </Field>
-
         <Field label="顧客 *">
           <select value={customerId} onChange={(e) => setCustomerId(e.target.value)} required className="input-luxury">
             <option value="">選択してください</option>
             {customers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
         </Field>
-
         <Field label="作業日 *">
           <input type="date" value={workDate} onChange={(e) => setWorkDate(e.target.value)} required className="input-luxury" />
         </Field>
-
         <Field label="部品番号">
           <div className="space-y-2">
             {items.map((item, i) => (
@@ -91,15 +90,12 @@ export default function WorkerNewCase() {
           </div>
           <button type="button" onClick={addItem} className="mt-2 text-xs tracking-widest gold hover:opacity-70 transition uppercase">＋ 部品を追加</button>
         </Field>
-
         <Field label="備考（見積書に記載）">
           <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="input-luxury resize-none" />
         </Field>
-
         <Field label="社内メモ（見積書に含めない）">
           <textarea value={internalNotes} onChange={(e) => setInternalNotes(e.target.value)} rows={2} className="input-luxury resize-none" />
         </Field>
-
         <button type="submit" disabled={loading} className="btn-gold w-full py-3 rounded-xl text-sm tracking-widest uppercase">
           {loading ? '送信中...' : '案件を登録する'}
         </button>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../../api/client';
+import { getCases, Case } from '../../api/cases.api';
 
 const STATUS_LABEL: Record<string, string> = {
   PENDING: '未処理', ESTIMATED: '見積済', FAX_SENT: 'FAX送信済', PRINTED: '印刷済', COMPLETED: '完了',
@@ -14,13 +14,13 @@ const STATUS_COLOR: Record<string, string> = {
 };
 
 export default function StaffCaseList() {
-  const [cases, setCases] = useState<any[]>([]);
+  const [cases, setCases] = useState<Case[]>([]);
   const [filter, setFilter] = useState('');
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
-    api.get('/cases').then((r) => setCases(r.data)).finally(() => setLoading(false));
+    getCases().then(setCases).finally(() => setLoading(false));
   }, []);
 
   const filtered = cases.filter((c) => !filter || c.status === filter);
@@ -31,16 +31,11 @@ export default function StaffCaseList() {
     <div className="max-w-5xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-sm font-medium tracking-widest text-white/50 uppercase">案件一覧</h2>
-        <select
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-          className="input-luxury w-auto text-xs tracking-wide"
-        >
+        <select value={filter} onChange={(e) => setFilter(e.target.value)} className="input-luxury w-auto text-xs tracking-wide">
           <option value="">すべて</option>
           {Object.entries(STATUS_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
         </select>
       </div>
-
       <div className="glass rounded-2xl overflow-hidden">
         <table className="w-full text-sm">
           <thead>
@@ -68,10 +63,7 @@ export default function StaffCaseList() {
                 <td className="px-5 py-4 text-white/40">{c.faxSent ? '✓' : '—'}</td>
                 <td className="px-5 py-4 text-white/40">{c.printed ? '✓' : '—'}</td>
                 <td className="px-5 py-4">
-                  <button
-                    onClick={() => navigate(`/staff/cases/${c.id}`)}
-                    className="text-xs tracking-widest gold hover:opacity-70 transition uppercase"
-                  >
+                  <button onClick={() => navigate(`/staff/cases/${c.id}`)} className="text-xs tracking-widest gold hover:opacity-70 transition uppercase">
                     詳細 →
                   </button>
                 </td>
