@@ -14,14 +14,14 @@ export default function VerifyEmail() {
   }, [token]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'radial-gradient(ellipse at 50% 0%, #1a1a2e 0%, #0f1117 70%)' }}>
-      <div className="glass rounded-2xl p-10 w-full max-w-sm text-center shadow-2xl">
-        {status === 'loading' && <p className="text-white/40 tracking-widest text-sm">確認中...</p>}
+    <div className="auth-wrap">
+      <div className="auth-card bg-white rounded-2xl p-10 text-center shadow-sm border border-gray-100">
+        {status === 'loading' && <p className="text-gray-400 text-sm">確認中...</p>}
         {status === 'success' && (
           <>
             <div className="text-4xl mb-4">✅</div>
-            <p className="text-white/80 text-sm mb-6">{message}</p>
-            <Link to="/signin" className="btn-gold block w-full py-2.5 rounded-xl text-xs tracking-widest uppercase">
+            <p className="text-gray-600 text-sm mb-6">{message}</p>
+            <Link to="/signin" className="btn-primary block w-full py-2.5 rounded-xl text-xs text-center">
               ログインへ
             </Link>
           </>
@@ -29,8 +29,8 @@ export default function VerifyEmail() {
         {status === 'error' && (
           <>
             <div className="text-4xl mb-4">❌</div>
-            <p className="text-red-400 text-sm mb-6">{message}</p>
-            <Link to="/signup" className="text-xs text-white/30 hover:text-white/60 transition underline">
+            <p className="text-red-500 text-sm mb-6">{message}</p>
+            <Link to="/signup" className="text-xs text-gray-400 hover:text-gray-600 transition underline">
               新規登録へ戻る
             </Link>
           </>

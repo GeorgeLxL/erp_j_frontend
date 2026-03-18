@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getCases, Case } from '../../api/cases.api';
+import { getCases, type Case } from '../../api/cases.api';
 
 const STATUS_LABEL: Record<string, string> = {
   PENDING: '未処理', ESTIMATED: '見積済', FAX_SENT: 'FAX送信済', PRINTED: '印刷済', COMPLETED: '完了',

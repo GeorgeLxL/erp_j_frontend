@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getUsers, createUser, updateUser, updateUserPassword, deleteUser, User } from '../../api/users.api';
+import { getUsers, createUser, updateUser, updateUserPassword, deleteUser, type User } from '../../api/users.api';
 import { useAuth } from '../../context/AuthContext';
 
 const ROLE_LABEL: Record<string, string> = { ADMIN: '管理者', STAFF: '事務スタッフ', WORKER: '作業員' };

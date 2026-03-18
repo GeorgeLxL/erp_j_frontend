@@ -5,13 +5,13 @@ import SignUp from './pages/auth/SignUp';
 import VerifyEmail from './pages/auth/VerifyEmail';
 import ForgotPassword from './pages/auth/ForgotPassword';
 import ResetPassword from './pages/auth/ResetPassword';
-import WorkerLayout from './pages/worker/WorkerLayout';
+import WorkerLayout from './components/WorkerLayout';
 import WorkerCaseList from './pages/worker/WorkerCaseList';
 import WorkerNewCase from './pages/worker/WorkerNewCase';
-import StaffLayout from './pages/staff/StaffLayout';
+import StaffLayout from './components/StaffLayout';
 import StaffCaseList from './pages/staff/StaffCaseList';
 import StaffCaseDetail from './pages/staff/StaffCaseDetail';
-import AdminLayout from './pages/admin/AdminLayout';
+import AdminLayout from './components/AdminLayout';
 import AdminUsers from './pages/admin/AdminUsers';
 import ChangePassword from './pages/auth/ChangePassword';
 

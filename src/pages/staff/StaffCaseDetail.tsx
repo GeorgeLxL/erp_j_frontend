@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getCase, updateCase, Case } from '../../api/cases.api';
-import { getDocuments, createDocument, sendFax, searchProducts, Document } from '../../api/resources.api';
+import { getCase, updateCase, type Case } from '../../api/cases.api';
+import { getDocuments, createDocument, sendFax, searchProducts, type Document } from '../../api/resources.api';
 
 const STATUS_LABEL: Record<string, string> = {
   PENDING: '未処理', ESTIMATED: '見積済', FAX_SENT: 'FAX送信済', PRINTED: '印刷済', COMPLETED: '完了',

@@ -1,7 +1,7 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createCase } from '../../api/cases.api';
-import { getCustomers, Customer } from '../../api/resources.api';
+import { getCustomers, type Customer } from '../../api/resources.api';
 
 interface PartItem { partNumberRaw: string; quantity: number }
 
