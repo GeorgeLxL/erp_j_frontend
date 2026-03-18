@@ -1,60 +1,85 @@
+import { z } from 'zod';
 import api from './config';
 
-export interface CaseItem {
-  id: string;
-  partNumberRaw: string;
-  quantity: number;
-  productId?: string | null;
-  product?: { name: string; partNumber: string; price: number | null } | null;
-}
+export const CaseItemSchema = z.object({
+  id: z.string(),
+  partNumberRaw: z.string(),
+  quantity: z.number(),
+  productId: z.string().nullable().optional(),
+  product: z.object({
+    name: z.string(),
+    partNumber: z.string(),
+    price: z.number().nullable(),
+  }).nullable().optional(),
+});
 
-export interface Case {
-  id: string;
-  vehicleType: string;
-  workDate: string;
-  notes: string | null;
-  internalNotes: string | null;
-  status: string;
-  faxSent: boolean;
-  printed: boolean;
-  invoiceNumber: string | null;
-  customer: { id: string; name: string; faxNumber: string | null; address: string | null };
-  worker: { id: string; name: string };
-  items: CaseItem[];
-}
+export const CaseSchema = z.object({
+  id: z.string(),
+  vehicleType: z.string(),
+  workDate: z.string(),
+  notes: z.string().nullable(),
+  internalNotes: z.string().nullable(),
+  status: z.string(),
+  faxSent: z.boolean(),
+  printed: z.boolean(),
+  invoiceNumber: z.string().nullable(),
+  customer: z.object({
+    id: z.string(),
+    name: z.string(),
+    faxNumber: z.string().nullable(),
+    address: z.string().nullable(),
+  }),
+  worker: z.object({
+    id: z.string(),
+    name: z.string(),
+  }),
+  items: z.array(CaseItemSchema),
+});
 
-export interface CreateCasePayload {
-  vehicleType: string;
-  customerId: string;
-  workDate: string;
-  notes: string;
-  internalNotes: string;
-  items: { partNumberRaw: string; quantity: number }[];
-}
+export const CreateCasePayloadSchema = z.object({
+  vehicleType: z.string().min(1),
+  customerId: z.string().min(1),
+  workDate: z.string(),
+  notes: z.string(),
+  internalNotes: z.string(),
+  items: z.array(z.object({
+    partNumberRaw: z.string().min(1),
+    quantity: z.number().min(1),
+  })),
+});
 
-export interface UpdateCasePayload {
-  vehicleType?: string;
-  customerId?: string;
-  workDate?: string;
-  notes?: string;
-  internalNotes?: string;
-  status?: string;
-  faxSent?: boolean;
-  printed?: boolean;
-  items?: { partNumberRaw: string; quantity: number; productId?: string | null }[];
-}
+export const UpdateCasePayloadSchema = z.object({
+  vehicleType: z.string().optional(),
+  customerId: z.string().optional(),
+  workDate: z.string().optional(),
+  notes: z.string().optional(),
+  internalNotes: z.string().optional(),
+  status: z.string().optional(),
+  faxSent: z.boolean().optional(),
+  printed: z.boolean().optional(),
+  items: z.array(z.object({
+    partNumberRaw: z.string(),
+    quantity: z.number(),
+    productId: z.string().nullable().optional(),
+  })).optional(),
+});
+
+export type CaseItem = z.infer<typeof CaseItemSchema>;
+export type Case = z.infer<typeof CaseSchema>;
+export type CreateCasePayload = z.infer<typeof CreateCasePayloadSchema>;
+export type UpdateCasePayload = z.infer<typeof UpdateCasePayloadSchema>;
 
 export const getCases = () =>
-  api.get<Case[]>('/cases').then((r) => r.data);
+  api.get('/cases').then((r) => z.array(CaseSchema).parse(r.data));
 
 export const getCase = (id: string) =>
-  api.get<Case>(`/cases/${id}`).then((r) => r.data);
+  api.get(`/cases/${id}`).then((r) => CaseSchema.parse(r.data));
 
 export const createCase = (payload: CreateCasePayload) =>
-  api.post<Case>('/cases', payload).then((r) => r.data);
+  api.post('/cases', payload).then((r) => CaseSchema.parse(r.data));
 
 export const updateCase = (id: string, payload: UpdateCasePayload) =>
-  api.put<Case>(`/cases/${id}`, payload).then((r) => r.data);
+  api.put(`/cases/${id}`, payload).then((r) => CaseSchema.parse(r.data));
 
 export const deleteCase = (id: string) =>
-  api.delete<{ message: string }>(`/cases/${id}`).then((r) => r.data);
+  api.delete(`/cases/${id}`).then((r) => r.data);

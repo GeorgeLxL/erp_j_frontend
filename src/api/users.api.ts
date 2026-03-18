@@ -1,38 +1,43 @@
+import { z } from 'zod';
 import api from './config';
 
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  active: boolean;
-}
+export const UserSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  email: z.string().email(),
+  role: z.enum(['ADMIN', 'STAFF', 'WORKER']),
+  active: z.boolean(),
+});
 
-export interface CreateUserPayload {
-  name: string;
-  email: string;
-  password: string;
-  role: string;
-}
+export const CreateUserPayloadSchema = z.object({
+  name: z.string().min(1),
+  email: z.string().email(),
+  password: z.string().min(6),
+  role: z.enum(['ADMIN', 'STAFF', 'WORKER']),
+});
 
-export interface UpdateUserPayload {
-  name: string;
-  email: string;
-  role: string;
-  active?: boolean;
-}
+export const UpdateUserPayloadSchema = z.object({
+  name: z.string().min(1),
+  email: z.string().email(),
+  role: z.enum(['ADMIN', 'STAFF', 'WORKER']),
+  active: z.boolean().optional(),
+});
+
+export type User = z.infer<typeof UserSchema>;
+export type CreateUserPayload = z.infer<typeof CreateUserPayloadSchema>;
+export type UpdateUserPayload = z.infer<typeof UpdateUserPayloadSchema>;
 
 export const getUsers = () =>
-  api.get<User[]>('/users').then((r) => r.data);
+  api.get('/users').then((r) => z.array(UserSchema).parse(r.data));
 
 export const createUser = (payload: CreateUserPayload) =>
-  api.post<User>('/users', payload).then((r) => r.data);
+  api.post('/users', payload).then((r) => UserSchema.parse(r.data));
 
 export const updateUser = (id: string, payload: UpdateUserPayload) =>
-  api.put<User>(`/users/${id}`, payload).then((r) => r.data);
+  api.put(`/users/${id}`, payload).then((r) => UserSchema.parse(r.data));
 
 export const updateUserPassword = (id: string, newPassword: string) =>
-  api.put<{ message: string }>(`/users/${id}/password`, { newPassword }).then((r) => r.data);
+  api.put(`/users/${id}/password`, { newPassword }).then((r) => r.data);
 
 export const deleteUser = (id: string) =>
-  api.delete<{ message: string }>(`/users/${id}`).then((r) => r.data);
+  api.delete(`/users/${id}`).then((r) => r.data);
