@@ -1,6 +1,10 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import SignIn from './pages/SignIn';
+import SignIn from './pages/auth/SignIn';
+import SignUp from './pages/auth/SignUp';
+import VerifyEmail from './pages/auth/VerifyEmail';
+import ForgotPassword from './pages/auth/ForgotPassword';
+import ResetPassword from './pages/auth/ResetPassword';
 import WorkerLayout from './pages/worker/WorkerLayout';
 import WorkerCaseList from './pages/worker/WorkerCaseList';
 import WorkerNewCase from './pages/worker/WorkerNewCase';
@@ -9,7 +13,7 @@ import StaffCaseList from './pages/staff/StaffCaseList';
 import StaffCaseDetail from './pages/staff/StaffCaseDetail';
 import AdminLayout from './pages/admin/AdminLayout';
 import AdminUsers from './pages/admin/AdminUsers';
-import ChangePassword from './pages/ChangePassword';
+import ChangePassword from './pages/auth/ChangePassword';
 
 function RoleRedirect() {
   const { user } = useAuth();
@@ -32,6 +36,10 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/signin" element={<SignIn />} />
+          <Route path="/signup" element={<SignUp />} />
+          <Route path="/verify-email/:token" element={<VerifyEmail />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password/:token" element={<ResetPassword />} />
           <Route path="/" element={<RoleRedirect />} />
 
           <Route path="/worker" element={<RequireAuth roles={['WORKER', 'ADMIN']}><WorkerLayout /></RequireAuth>}>
